@@ -43,7 +43,7 @@ int SDO_write(int fd, const SDO_data* d) {
 		{2, d->index},
 		{1, d->subindex},
 		d->data,
-		{fillerbytes, 0x00}
+		{static_cast<uint32_t>(fillerbytes), 0x00}
 	};
 	
 	

@@ -7,9 +7,12 @@
 enum PDO_n_ID {
 	PDO_TX1_ID = 0x180,
 	PDO_TX2_ID = 0x280,
-
+	PDO_TX3_ID = 0x380,
+	PDO_TX4_ID = 0x480,
 	PDO_RX1_ID = 0x200, /* +node id */
-	PDO_RX2_ID = 0x300  /* +node id */
+	PDO_RX2_ID = 0x300, /* +node id */
+	PDO_RX3_ID = 0x400, /* +node id */
+	PDO_RX4_ID = 0x500  /* +node id */
 };
 
 /**

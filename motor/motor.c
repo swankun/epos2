@@ -40,8 +40,12 @@ static int motor_config_node(uint16_t node) {
 	// PDO cob id's
 	err |= epos_Receive_PDO_n_Parameter(node, 1, PDO_RX1_ID + node);
 	err |= epos_Receive_PDO_n_Parameter(node, 2, PDO_RX2_ID + node);
+	err |= epos_Receive_PDO_n_Parameter(node, 3, PDO_RX3_ID + node);
+	err |= epos_Receive_PDO_n_Parameter(node, 4, PDO_RX4_ID + node);
 	err |= epos_Transmit_PDO_n_Parameter(node, 1, PDO_TX1_ID + node);
 	err |= epos_Transmit_PDO_n_Parameter(node, 2, PDO_TX2_ID + node);
+	err |= epos_Transmit_PDO_n_Parameter(node, 3, PDO_TX3_ID + node);
+	err |= epos_Transmit_PDO_n_Parameter(node, 4, PDO_TX4_ID + node);
 
 
 	/*** Communication, from pc to epos ***/
@@ -99,20 +103,18 @@ int motor_init(void) {
 	// Open two connections to the CAN-network
 	uint16_t pdo_masks[4] = {COB_MASK, COB_MASK, COB_MASK, COB_MASK};
 	uint16_t pdo_filters[4] = {
-		PDO_TX1_ID + MOTOR_EPOS_R_ID,
-		PDO_TX2_ID + MOTOR_EPOS_R_ID,
-		PDO_TX1_ID + MOTOR_EPOS_L_ID,
-		PDO_TX2_ID + MOTOR_EPOS_L_ID
+		PDO_TX1_ID + MOTOR_EPOS_NODEID,
+		PDO_TX2_ID + MOTOR_EPOS_NODEID,
+		PDO_TX3_ID + MOTOR_EPOS_NODEID,
+		PDO_TX4_ID + MOTOR_EPOS_NODEID
 	};
 	motor_pdo_fd = socketcan_open(pdo_filters, pdo_masks, 4);
 
-	uint16_t cfg_masks[5] = {COB_MASK, COB_MASK, COB_MASK, COB_MASK, COB_MASK};
-	uint16_t cfg_filters[5] = {
+	uint16_t cfg_masks[3] = {COB_MASK, COB_MASK, COB_MASK};
+	uint16_t cfg_filters[3] = {
 		0x00,
-		NMT_TX + MOTOR_EPOS_R_ID,
-		SDO_TX + MOTOR_EPOS_R_ID,
-		NMT_TX + MOTOR_EPOS_L_ID,
-		SDO_TX + MOTOR_EPOS_L_ID
+		NMT_TX + MOTOR_EPOS_NODEID,
+		SDO_TX + MOTOR_EPOS_NODEID,
 	};
 	motor_cfg_fd = socketcan_open(cfg_filters, cfg_masks, 5);
 
@@ -127,12 +129,7 @@ int motor_init(void) {
 		return MOTOR_ERROR;
 	}
 
-	err |= motor_config_node(MOTOR_EPOS_L_ID);
-	if (err != 0) {
-		return MOTOR_ERROR;
-	}
-
-	err |= motor_config_node(MOTOR_EPOS_R_ID);
+	err |= motor_config_node(MOTOR_EPOS_NODEID);
 	if (err != 0) {
 		return MOTOR_ERROR;
 	}
@@ -156,10 +153,8 @@ void motor_close(void) {
 int motor_enable(void) {
 	int err = 0;
 	err |= NMT_change_state(motor_cfg_fd, CANOPEN_BROADCAST_ID, NMT_Enter_PreOperational);
-	err |= epos_Controlword(MOTOR_EPOS_L_ID, Shutdown); // switch_on_disabled -> switch_on_enabled
-	err |= epos_Controlword(MOTOR_EPOS_R_ID, Shutdown);
-	err |= epos_Controlword(MOTOR_EPOS_L_ID, Switch_On_And_Enable_Operation);
-	err |= epos_Controlword(MOTOR_EPOS_R_ID, Switch_On_And_Enable_Operation);
+	err |= epos_Controlword(MOTOR_EPOS_NODEID, Shutdown); // switch_on_disabled -> switch_on_enabled
+	err |= epos_Controlword(MOTOR_EPOS_NODEID, Switch_On_And_Enable_Operation);
 
 	// Open PDO-communication
 	err |= NMT_change_state(motor_cfg_fd, CANOPEN_BROADCAST_ID, NMT_Start_Node);
@@ -173,8 +168,7 @@ int motor_disable(void) {
 
 	// Stop PDO-communication
 	err |= NMT_change_state(motor_cfg_fd, CANOPEN_BROADCAST_ID, NMT_Enter_PreOperational);
-	err |= epos_Controlword(MOTOR_EPOS_L_ID, Disable_Voltage);
-	err |= epos_Controlword(MOTOR_EPOS_R_ID, Disable_Voltage);
+	err |= epos_Controlword(MOTOR_EPOS_NODEID, Disable_Voltage);
 	err |= NMT_change_state(motor_cfg_fd, CANOPEN_BROADCAST_ID, NMT_Stop_Node);
 
 	return err;
@@ -186,8 +180,7 @@ int motor_halt(void) {
 
 	// Stop PDO-communication
 	err |= NMT_change_state(motor_cfg_fd, CANOPEN_BROADCAST_ID, NMT_Enter_PreOperational);
-	err |= epos_Controlword(MOTOR_EPOS_L_ID, Quickstop);
-	err |= epos_Controlword(MOTOR_EPOS_R_ID, Quickstop);
+	err |= epos_Controlword(MOTOR_EPOS_NODEID, Quickstop);
 	err |= NMT_change_state(motor_cfg_fd, CANOPEN_BROADCAST_ID, NMT_Stop_Node);
 
 	return err;
@@ -196,8 +189,7 @@ int motor_halt(void) {
 
 int motor_setmode(enum Motor_mode mode) {
 	int err = 0;
-	err |= epos_Modes_of_Operation(MOTOR_EPOS_L_ID, (enum Epos_mode)mode);
-	err |= epos_Modes_of_Operation(MOTOR_EPOS_R_ID, (enum Epos_mode)mode);
+	err |= epos_Modes_of_Operation(MOTOR_EPOS_NODEID, (enum Epos_mode)mode);
 	return err;
 }
 

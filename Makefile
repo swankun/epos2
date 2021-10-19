@@ -1,7 +1,7 @@
 
-CC = gcc
-CFLAGS = -std=gnu99 -fPIC -Wall -Werror -Wextra -Wno-unused -O2 -I .
-LDFLAGS = -std=gnu99 -Werror -L . -Wl,-rpath=.
+CC = g++
+CFLAGS = -fPIC -Wall -Werror -Wextra -Wno-unused -O2 -I .
+LDFLAGS = -Werror -L . -Wl,-rpath=.
 LDFLAGS_SO = $(LDFLAGS) -shared -fPIC
 
 
@@ -17,7 +17,7 @@ CANOPEN_SRC = canopen/NMT.c canopen/PDO.c canopen/SDO.c
 CANOPEN_OBJ = $(CANOPEN_SRC:.c=.o)
 CANOPEN_LIB = libcanopen.so
 
-MOTOR_SRC = motor/motor.c motor/epos.c motor/vel.c motor/pos.c
+MOTOR_SRC = motor/motor.c motor/epos.c # motor/vel.c motor/pos.c
 MOTOR_OBJ = $(MOTOR_SRC:.c=.o)
 MOTOR_LIB = libmotor.so
 
