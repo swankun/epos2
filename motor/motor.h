@@ -3,6 +3,7 @@
 
 // #include "pos.h"
 // #include "vel.h"
+#include "current.h"
 #include <inttypes.h>
 
 
@@ -33,6 +34,7 @@
 enum Motor_mode {
 	Motor_mode_Velocity = 3,
 	Motor_mode_Position = 1,
+	Motor_mode_Current = -3,
 };
 
 

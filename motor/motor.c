@@ -21,14 +21,14 @@ static int motor_config_node(uint16_t node) {
 	int num_PDOs;
 
 	// Set Configuration parameters
-	err |= epos_Maximal_Profile_Velocity(node, motor_mmsec_to_rpm(MOTOR_MAX_SPEED));
+	err |= epos_Maximal_Profile_Velocity(node, 100);
 	if( err != 0 ) {
 		printd(LOG_FATAL, "Motor: error configuring node %d, no power?\n", node);
 		return err;
 	}
-	err |= epos_Quickstop_Deceleration(node, motor_mmsec_to_rpm(MOTOR_MAX_QUICK_ACC));
-	err |= epos_Profile_Acceleration(node, motor_mmsec_to_rpm(MOTOR_MAX_ACC));
-	err |= epos_Profile_Deceleration(node, motor_mmsec_to_rpm(MOTOR_MAX_ACC));
+	err |= epos_Quickstop_Deceleration(node, 10000);
+	err |= epos_Profile_Acceleration(node, 10000);
+	err |= epos_Profile_Deceleration(node, 10000);
 	err |= epos_Motion_Profile_Type(node, trapezodial_profile);
 	err |= epos_Miscellaneous_Configuration(node, Meassure_main_position_sensors_motor_speed_exacting_by_detecting_encoder_pulse_time);
 	if(err != 0) {
@@ -50,47 +50,81 @@ static int motor_config_node(uint16_t node) {
 
 	/*** Communication, from pc to epos ***/
 
-	// PDO RX1 target speed (used in profile pos mode)
+	// PDO RX1
 	num_PDOs = 2;
-	Epos_pdo_mapping target_pos[] = {
-		{0x607A, 0x00, 32},   // Target Possition
-		{0x6040, 0x00, 16}    // Controlword
+	Epos_pdo_mapping RxPDO1[] = {
+		{0x6040, 0x00, 16},   // Controlword
+		{0x2030, 0x00, 16}   // Current Command
 	};
-	err |= epos_Receive_PDO_n_Mapping(node, 1, num_PDOs, target_pos);
+	err |= epos_Receive_PDO_n_Mapping(node, 1, num_PDOs, RxPDO1);
 
-	// PDO RX2 targer velocity (used in profile vel mode)
+	// PDO RX2
 	num_PDOs = 2;
-	Epos_pdo_mapping target_vel[] = {
-		{0x60FF, 0x00, 32},  // Target Velocity
-		{0x6040, 0x00, 16}   // Controlword
+	Epos_pdo_mapping RxPDO2[] = {
+		{0x6040, 0x00, 16},  // Controlword
+		{0x6060, 0x00, 8}   // Mode of Operation
 	};
-	err |= epos_Receive_PDO_n_Mapping(node, 2, num_PDOs, target_vel);
+	err |= epos_Receive_PDO_n_Mapping(node, 2, num_PDOs, RxPDO2);
+
+	// PDO RX3
+	num_PDOs = 2;
+	Epos_pdo_mapping RxPDO3[] = {
+		{0x6040, 0x00, 16},  // Controlword
+		{0x607A, 0x00, 32}   // Target Position
+	};
+	err |= epos_Receive_PDO_n_Mapping(node, 3, num_PDOs, RxPDO3);
+
+	// PDO RX4
+	num_PDOs = 2;
+	Epos_pdo_mapping RxPDO4[] = {
+		{0x6040, 0x00, 16},  // Controlword
+		{0x60FF, 0x00, 32}   // Target Velocity
+	};
+	err |= epos_Receive_PDO_n_Mapping(node, 4, num_PDOs, RxPDO4);
 
 	// Disable the rest
-	err |= epos_Receive_PDO_n_Mapping(node, 3, 0, NULL);
-	err |= epos_Receive_PDO_n_Mapping(node, 4, 0, NULL);
+	// err |= epos_Receive_PDO_n_Mapping(node, 3, 0, NULL);
+	// err |= epos_Receive_PDO_n_Mapping(node, 4, 0, NULL);
 
 
 	/*** Communication, from epos to pc ***/
 
-	// PDO TX1 Statusword
-	num_PDOs = 1;
-	Epos_pdo_mapping status[] = {
-		{0x6041, 0x00, 16}   // Statusword
-	};
-	err |= epos_Transmit_PDO_n_Mapping(node, 1, num_PDOs, status);
-
-	// PDO TX2 Position and speed
+	// PDO TX1
 	num_PDOs = 2;
-	Epos_pdo_mapping enc[] = {
-		{0x6064, 0x00, 32},  // Position Actual value
-		{0x606C, 0x00, 32}   // Velocity Actual value
+	Epos_pdo_mapping TxPDO1[] = {
+		{0x6041, 0x00, 16},  // Statusword
+		{0x6078, 0x00, 16}   // Current Actual Value
 	};
-	err |= epos_Transmit_PDO_n_Mapping(node, 2, num_PDOs, enc);
+	err |= epos_Transmit_PDO_n_Mapping(node, 1, num_PDOs, TxPDO1);
+
+	// PDO TX2
+	num_PDOs = 3;
+	Epos_pdo_mapping TxPDO2[] = {
+		{0x6041, 0x00, 16},  // Statusword
+		{0x6060, 0x00, 8},   // Mode of Operation
+		{0x6061, 0x00, 8}    // Mode of Operation Display
+	};
+	err |= epos_Transmit_PDO_n_Mapping(node, 2, num_PDOs, TxPDO2);
+
+	// PDO TX3
+	num_PDOs = 2;
+	Epos_pdo_mapping TxPDO3[] = {
+		{0x6041, 0x00, 16},  // Statusword
+		{0x6064, 0x00, 32}   // Position Actual Value
+	};
+	err |= epos_Transmit_PDO_n_Mapping(node, 3, num_PDOs, TxPDO3);
+
+	// PDO TX4
+	num_PDOs = 2;
+	Epos_pdo_mapping TxPDO4[] = {
+		{0x6041, 0x00, 16},  // Statusword
+		{0x606C, 0x00, 32}   // Velocity Actual Value
+	};
+	err |= epos_Transmit_PDO_n_Mapping(node, 4, num_PDOs, TxPDO4);
 
 	// Disable the rest
-	err |= epos_Transmit_PDO_n_Mapping(node, 3, 0, NULL);
-	err |= epos_Transmit_PDO_n_Mapping(node, 4, 0, NULL);
+	// err |= epos_Transmit_PDO_n_Mapping(node, 3, 0, NULL);
+	// err |= epos_Transmit_PDO_n_Mapping(node, 4, 0, NULL);
 
 
 	return err;
@@ -135,7 +169,7 @@ int motor_init(void) {
 	}
 
 	// Set the default mode
-	motor_setmode(Motor_mode_Velocity);
+	motor_setmode(Motor_mode_Current);
 	if (err != 0) {
 		return MOTOR_ERROR;
 	}
